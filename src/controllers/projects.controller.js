@@ -5,7 +5,6 @@ const TOKEN_KEY = process.env.JWT_TOKEN;
 const TOKEN_EXPIRY = process.env.TOKEN_EXPIRY;
 
 let { encryptData, decryptData } = require("../utils/encrypt");
-const { MAX } = require("mssql");
 
 const createProject = async (req, res, next) => {
   try {
@@ -30,7 +29,7 @@ const createProject = async (req, res, next) => {
 
     let addproject = await pool
       .request()
-      .input("name", sql.NVarChar(MAX), projectName)
+      .input("name", sql.NVarChar, projectName)
       .input("createdBy", sql.Int, userId)
       .input("isActive", sql.Bit, true)
       .execute("usp_insertProject");
@@ -74,9 +73,35 @@ const getProjectByUserId = async (req, res, next) => {
 
     let projectData = projectById.recordsets[0];
 
+
+    const transformedData = projectData.reduce((acc, curr) => {
+        let project = acc.find(p => p.id === curr.id);
+        if (!project) {
+            project = {
+                id: curr.id,
+                name: curr.name,
+                createdDateTime: curr.createdDateTime,
+                createdBy: curr.createdBy,
+                updatedBy: curr.updatedBy,
+                isActive: curr.isActive,
+                members: []
+            };
+            acc.push(project);
+        }
+        if (curr.projectId) {
+            project.members.push({
+                projectId: curr.projectId,
+                memberId: curr.memberId,
+                memberName: curr.memberName
+            });
+        }
+
+        return acc;
+    }, []);
+
     return res.status(200).send({
       success: true,
-      data: projectData,
+      data: transformedData,
     });
   } catch (error) {
     console.log(error, "project.controller -> getProjectByUserId");
@@ -84,56 +109,104 @@ const getProjectByUserId = async (req, res, next) => {
   }
 };
 
-const getAllProject = async (req, res, next) => {
+const addProjectMember = async (req, res, next) => {
   try {
     // Get user input
-    let { password } = req.body;
-
-    let { userName: loginUser, id: loginUserId } = req.user;
+    let { email,id:projectId } = req.body;
+    let { userName, userId } = req.user;
 
     let pool = await poolPromise;
     let userExist = await pool
       .request()
-      .input("userName", sql.NVarChar, loginUser)
-      .execute("usp_checkRegisteredUser");
+      .input("email", sql.NVarChar, email)
+      .execute("usp_checkAndGetUser");
 
-    if (userExist.recordset[0] && userExist.recordset[0].result == 0) {
-      return res.send({
+    if (userExist && userExist.recordset && userExist.recordset.length == 0) {
+      return res.status(400).send({
         success: false,
-        message: "User detail not found !!",
+        message: "User is Not Exits !!",
       });
     }
 
-    let encryptNewPassword = await encryptData(password);
+    let memberUser = userExist.recordset[0]
+    let memberExist = await pool
+    .request()
+    .input("projectId", sql.Int, projectId)
+    .input("memberId", sql.Int, memberUser.id)
+    .execute("usp_checkMember");
 
-    // Create user in our database
-    let updateUser = await pool
-      .request()
-      .input("id", sql.Int, loginUserId)
-      .input("password", sql.NVarChar, encryptNewPassword)
-      .execute("usp_resetPassword");
-
-    let userData = updateUser.recordset;
-
-    if (userData && userData[0] && userData[0].ErrorNumber) {
-      return res.send({
-        success: false,
-        message: "user Password not updated sucessfully",
-      });
-    }
-
-    return res.send({
-      success: true,
-      data: userData,
+  if (
+    memberExist.recordset[0] &&
+    memberExist.recordset[0].isMemberExists == true
+  ) {
+    return res.status(409).send({
+      success: false,
+      message: "Member already exists In Project !",
     });
+  }
+
+
+    let addMember = await pool
+      .request()
+      .input('projectId', sql.Int, projectId)
+      .input('memberId', sql.Int, memberUser.id)
+      .input('memberMail', sql.NVarChar(255), memberUser.email)
+      .input('createdBy', sql.Int, userId)
+      .input('isActive', sql.Bit, true)
+      .execute('usp_insertProjectMember')
+
+    let memberData = addMember.recordset;
+    if (memberData && memberData[0] && memberData[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "Member Not Added sucessfully",
+      });
+    }
+
+    return res.status(201).send({
+      success: true,
+      message: "Member Added sucessfully",
+      data: memberData,
+    });
+
   } catch (error) {
-    console.log(error, "user.controller -> userResetPassword");
+    console.log(error, "projects.controller -> addProjectMember");
     next(error);
   }
 };
 
+const getMemberByProjectId = async (req, res, next) => {
+    try {
+      let {  id:projectId } = req.query;
+  
+      let pool = await poolPromise;
+      let memberById = await pool
+        .request()
+        .input("projectId", sql.Int, projectId)
+        .execute("usp_getMemberByProjectId");
+  
+      if (memberById && memberById.recordset && memberById.recordset.length == 0) {
+        return res.status(400).send({
+          success: false,
+          message: "No Project Member Data Found ",
+        });
+      }
+  
+      let memberData = memberById.recordsets[0];
+  
+      return res.status(200).send({
+        success: true,
+        data: memberData,
+      });
+    } catch (error) {
+      console.log(error, "project.controller -> getMemberByProjectId");
+      next(error);
+    }
+  };
+
 module.exports = {
   createProject,
   getProjectByUserId,
-  getAllProject,
+  addProjectMember,
+  getMemberByProjectId
 };

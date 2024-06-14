@@ -14,7 +14,9 @@ const {
 
 const {
     createProject,
-    getProjectByUserId
+    getProjectByUserId,
+    addProjectMember,
+    getMemberByProjectId
 } = require("../controllers/projects.controller");
 
 
@@ -25,8 +27,14 @@ router.post(
   createProject
 );
 
-router.post("/update", verifyToken, validateBody(createProjectSchema), getProjectByUserId);
+let task = require("./task.route")
+router.use("/tasks",task)
+// router.post("/update", verifyToken, validateBody(createProjectSchema), getProjectByUserId);
+
+router.post("/addMember", verifyToken,  addProjectMember);
 
 router.get("/getAllByUserId", verifyToken,  getProjectByUserId);
+
+router.get("/membersByProjectId", verifyToken,  getMemberByProjectId);
 
 module.exports = router;
