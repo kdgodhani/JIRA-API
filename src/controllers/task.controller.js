@@ -43,6 +43,44 @@ const createTask = async (req, res, next) => {
   }
 };
 
+const modifyTask = async (req, res, next) => {
+  try {
+    let { newTitle,taskId,newDesc,newDeadLine,newProgress,isActive= true} = req.body;
+
+    let { userRole, userId } = req.user;
+
+    let pool = await poolPromise;
+    let updateTask = await pool
+      .request()
+      .input("id", sql.Int, taskId)
+      .input("title", sql.NVarChar, newTitle)
+      .input("description", sql.NVarChar, newDesc)
+      .input("deadline", sql.Date, newDeadLine)
+      .input("progress", sql.Int, Number(newProgress))
+      .input("updatedBy", sql.Int, userId)
+      .input("isActive", sql.Bit, isActive)
+      .execute("usp_updateTask");
+
+    let taskData = updateTask.recordset[0];
+    if (taskData && taskData[0] && taskData[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "Task not Updated sucessfully",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      data: taskData,
+      message: "Task Updated sucessfully",
+    });
+
+  }catch (error) {
+    console.log(error, "task.controller -> modifyTask");
+    next(error);
+  }
+};
+
 const getTaskByProjectId = async (req, res, next) => {
   try {
     let { projectId } = req.params;
@@ -85,9 +123,6 @@ const editTaskStateById = async (req, res, next) => {
     // let progress = (Number(newState) / 4) * 100;
     let status = STATUS_MAPPING[Number(newState)];
 
-
-    console.log(status,"euiueiruiureu")
-
     let pool = await poolPromise;
     let updateTask = await pool
       .request()
@@ -123,8 +158,44 @@ const editTaskStateById = async (req, res, next) => {
   }
 };
 
+const getCurrentTaskById = async (req, res, next) => {
+  try {
+    let { taskId } = req.params;
+    let { userId } = req.user;
+
+    let pool = await poolPromise;
+    let taskById = await pool
+      .request()
+      .input("taskId", sql.Int, taskId)
+      .execute("usp_getCurrentTaskById");
+
+    if (
+      taskById &&
+      taskById.recordset &&
+      taskById.recordset.length == 0
+    ) {
+      return res.status(400).send({
+        success: false,
+        message: "No Data Found ",
+      });
+    }
+
+    let taskData = taskById.recordsets[0];
+
+    return res.status(200).send({
+      success: true,
+      data: taskData,
+    });
+  } catch (error) {
+    console.log(error, "task.controller -> getCurrentTaskById");
+    next(error);
+  }
+};
+
 module.exports = {
   createTask,
+  modifyTask,
   getTaskByProjectId,
   editTaskStateById,
+  getCurrentTaskById
 };

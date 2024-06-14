@@ -14,8 +14,10 @@ const {
 
 const {
     createTask,
+    modifyTask,
     getTaskByProjectId,
-    editTaskStateById
+    editTaskStateById,
+    getCurrentTaskById
 } = require("../controllers/task.controller");
 
 
@@ -27,6 +29,13 @@ router.post(
 );
 
 router.post(
+  "/modify",
+  verifyToken,
+//   validateBody(createTaskSchema),
+  modifyTask
+);
+
+router.post(
   "/editState",
   verifyToken,
 //   validateBody(createTaskSchema),
@@ -34,6 +43,8 @@ editTaskStateById
 );
 
 router.get("/:projectId", verifyToken,  getTaskByProjectId);
+
+router.get("/getTaskById/:taskId", verifyToken,  getCurrentTaskById);
 
 
 module.exports = router;
