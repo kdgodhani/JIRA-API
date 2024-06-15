@@ -126,7 +126,7 @@ const userLogin = async (req, res, next) => {
   }
 };
 
-const userUpdate = async (req, res, next) => {
+const updateOrDelete = async (req, res, next) => {
   try {
     let { role,  id, isActive } = req.body;
 
@@ -269,6 +269,6 @@ module.exports = {
   userRegister,
   userLogin,
   userResetPassword,
-  userUpdate,
+  updateOrDelete,
   userGetAll,
 };

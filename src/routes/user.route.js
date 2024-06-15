@@ -17,7 +17,7 @@ const {
 const {
   userRegister,
   userLogin,
-  userUpdate,
+  updateOrDelete,
   userGetAll
 } = require("../controllers/user.controller");
 
@@ -31,10 +31,10 @@ router.post(
 
 router.post("/login", validateBody(createUserSchema), userLogin);
 
-router.put("/update", 
+router.put("/updateOrDelete", 
   verifyToken,
   // validateBody(createUserSchema), 
-  userUpdate);
+  updateOrDelete);
 
 router.get("/getAll", 
   verifyToken,
