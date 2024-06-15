@@ -6,25 +6,23 @@ const TOKEN_EXPIRY = process.env.TOKEN_EXPIRY;
 
 let { encryptData, decryptData } = require("../utils/encrypt");
 
+let ROLE = {
+  USER: "User",
+  MANAGER: "Manager",
+};
+
 // Mannually entry in sql server
 
 // name : "admin"
 // email : "admin@planetx.com"
-// password : "$2a$10$eL9Tbhw2YJ3sOoEKLvcYC.aalfT/NKmeiBnuvHVsPhg7lPHmjU.ZK"  // Admin@123
+// password : "ee1f0a3f4c4da800a13807d5520a6cf7"  // Test@123
 // role:"Admin"
+
+// In that Verify admin we can also add as middleware but in this project not used that way
 
 const userRegister = async (req, res, next) => {
   try {
     let { name, email, password } = req.body;
-
-    // let { userRole } = req.user;
-    // if (!userRole || (userRole && userRole !== "Admin")) {
-    //   return res.send({
-    //     success: false,
-    //     message: "Only Admin Can Create User !!",
-    //     data: [],
-    //   });
-    // }
 
     let pool = await poolPromise;
     let userExist = await pool
@@ -47,7 +45,7 @@ const userRegister = async (req, res, next) => {
       .input("email", sql.NVarChar, email)
       .input("password", sql.NVarChar, encryptPassword)
       .input("isActive", sql.Bit, true)
-      .input("role", sql.NVarChar, "User")
+      .input("role", sql.NVarChar, ROLE.USER)
       .execute("usp_insertUpdateUser");
 
     let User = addUser.recordset;
@@ -64,7 +62,6 @@ const userRegister = async (req, res, next) => {
       data: User,
       message: "user created sucessfully",
     });
-
   } catch (error) {
     console.log(error, "user.controller -> userRegister");
     next(error);
@@ -89,7 +86,7 @@ const userLogin = async (req, res, next) => {
       });
     }
 
-    let user = userExist.recordset[0]
+    let user = userExist.recordset[0];
 
     // console.log(user,"userExist---- ")
 
@@ -115,18 +112,107 @@ const userLogin = async (req, res, next) => {
     finalData.push({
       id: userId,
       email: userEmail,
-      name : userName,
+      name: userName,
       token: token,
     });
 
     return res.status(200).send({
       success: true,
       data: finalData,
-
     });
-
   } catch (error) {
     console.log(error, "user.controller -> userLogin");
+    next(error);
+  }
+};
+
+const userUpdate = async (req, res, next) => {
+  try {
+    let { role,  id, isActive } = req.body;
+
+    let { userRole } = req.user;
+
+    if (!userRole || (userRole && userRole !== "Admin")) {
+      return res.send({
+        success: false,
+        message: "Only Admin Can Update User Role!!",
+        data: [],
+      });
+    }
+
+    let pool = await poolPromise;
+    let userExist = await pool
+      .request()
+      .input("id", sql.Int, id)
+      .execute("usp_checkAndGetUserById");
+
+    if (userExist && userExist.recordset && userExist.recordset.length == 0) {
+      return res.status(400).send({
+        success: false,
+        message: "User is Not Exits !!",
+      });
+    }
+
+    let findedUser = userExist.recordset[0];
+
+    let upadteUser = await pool
+      .request()
+      .input("isActive", sql.Bit, isActive)
+      .input("role", sql.NVarChar, role)
+      .input("id", sql.Int, findedUser.id)
+      .execute("usp_insertUpdateUser");
+
+    let User = upadteUser.recordset;
+
+    if (User && User[0] && User[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "user not created sucessfully",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      data: User,
+      message: "user Updated sucessfully",
+    });
+  } catch (error) {
+    console.log(error, "user.controller -> userRegister");
+    next(error);
+  }
+};
+
+const userGetAll = async (req, res, next) => {
+  try {
+    let { userRole } = req.user;
+
+    if (!userRole || (userRole && userRole !== "Admin")) {
+      return res.send({
+        success: false,
+        message: "Only Admin Can get All User data!!",
+        data: [],
+      });
+    }
+
+    let pool = await poolPromise;
+    let getAllUser = await pool.request().execute("usp_getAllUser");
+
+    let userData = getAllUser.recordsets[0];
+
+    if (userData && userData[0] && userData[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "Getting user issue ",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      data: userData,
+      message: "all user data ",
+    });
+  } catch (error) {
+    console.log(error, "user.controller -> getAllUser");
     next(error);
   }
 };
@@ -182,5 +268,7 @@ const userResetPassword = async (req, res, next) => {
 module.exports = {
   userRegister,
   userLogin,
-  userResetPassword
+  userResetPassword,
+  userUpdate,
+  userGetAll,
 };

@@ -17,6 +17,8 @@ const {
 const {
   userRegister,
   userLogin,
+  userUpdate,
+  userGetAll
 } = require("../controllers/user.controller");
 
 
@@ -28,5 +30,14 @@ router.post(
 );
 
 router.post("/login", validateBody(createUserSchema), userLogin);
+
+router.put("/update", 
+  verifyToken,
+  // validateBody(createUserSchema), 
+  userUpdate);
+
+router.get("/getAll", 
+  verifyToken,
+  userGetAll);
 
 module.exports = router;
