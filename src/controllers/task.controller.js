@@ -115,6 +115,46 @@ const getTaskByProjectId = async (req, res, next) => {
   }
 };
 
+// this api for which task assigned to login user
+const getTaskByUserId = async (req, res, next) => {
+  try {
+    let { userId } = req.params;
+
+    let { userId:memberId } = req.user;
+
+    let pool = await poolPromise;
+    let taskByUserId = await pool
+      .request()
+      .input("userId", sql.Int, memberId)
+      .execute("usp_getTaskByUserId");
+
+    if (
+      taskByUserId &&
+      taskByUserId.recordset &&
+      taskByUserId.recordset.length == 0
+    ) {
+      return res.status(400).send({
+        success: false,
+        message: "No Data Found ",
+      });
+    }
+
+    let taskData = taskByUserId.recordsets[0];
+
+    return res.status(200).send({
+      success: true,
+      data: taskData,
+    });
+
+  } catch (error) {
+    console.log(error, "task.controller -> getTaskByUserId");
+    next(error);
+  }
+};
+
+
+
+
 const editTaskStateById = async (req, res, next) => {
   try {
     let { idTask, newState } = req.body;
@@ -182,12 +222,89 @@ const getCurrentTaskById = async (req, res, next) => {
 
     let taskData = taskById.recordsets[0];
 
+    const tasksMap = taskData.reduce((acc, row) => {
+      if (!acc[row.id]) {
+          acc[row.id] = {
+              id: row.id,
+              progress: row.progress,
+              deadline: row.deadline,
+              startDate: row.startDate,
+              description: row.description,
+              status: row.status,
+              title: row.title,
+              projectId: row.projectId,
+              memberId: row.memberId,
+              isActive: row.isActive,
+              createdDate: row.createdDate,
+              updatedDate: row.updatedDate,
+              createdBy: row.createdBy,
+              updatedBy: row.updatedBy,
+              responsible: row.responsible,
+              comments: []
+          };
+      }
+      if (row.content) {
+          acc[row.id].comments.push({
+            commentId : row.commentId,
+              content: row.content,
+              author: row.author,
+              taskId: row.taskId,
+              authorName: row.authorName,
+          });
+      }
+      return acc;
+  }, {});
+
+  const tasks = Object.values(tasksMap);
+
+
     return res.status(200).send({
       success: true,
-      data: taskData,
+      data: tasks,
     });
   } catch (error) {
     console.log(error, "task.controller -> getCurrentTaskById");
+    next(error);
+  }
+};
+
+
+const addComment = async (req, res, next) => {
+  try {
+    let { text, authorId, taskId } = req.body;
+
+    console.log(req.body, "this is request --- -");
+    let { userRole, userId } = req.user;
+
+
+    console.log(authorId,"authorId")
+    console.log(userId,"userId")
+    let pool = await poolPromise;
+    let addComment = await pool
+      .request()
+      .input("content", sql.NVarChar, text)
+      .input("taskId", sql.Int, taskId)
+      .input("createdBy", sql.Int, userId)
+      .input("isActive", sql.Bit, true)
+      .execute("usp_insertComments");
+
+    let commentData = addComment.recordset[0];
+
+    if (commentData && commentData[0] && commentData[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "comment not Added sucessfully",
+      });
+    }
+
+    return res.status(201).send({
+      success: true,
+      data: commentData,
+      message: "comment created sucessfully",
+    });
+
+  } catch (error) {
+    console.log(error, "task.controller -> addComment");
     next(error);
   }
 };
@@ -196,6 +313,8 @@ module.exports = {
   createTask,
   modifyTask,
   getTaskByProjectId,
+  getTaskByUserId,
   editTaskStateById,
-  getCurrentTaskById
+  getCurrentTaskById,
+  addComment
 };
