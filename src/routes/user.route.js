@@ -18,7 +18,8 @@ const {
   userRegister,
   userLogin,
   updateOrDelete,
-  userGetAll
+  userGetAll,
+  updateImage
 } = require("../controllers/user.controller");
 
 
@@ -30,6 +31,8 @@ router.post(
 );
 
 router.post("/login", validateBody(createUserSchema), userLogin);
+
+router.post("/updateImage", validateBody(createUserSchema), updateImage);
 
 router.put("/updateOrDelete", 
   verifyToken,

@@ -265,10 +265,59 @@ const userResetPassword = async (req, res, next) => {
   }
 };
 
+const updateImage = async (req, res, next) => {
+  try {
+    let { name, email, password } = req.body;
+
+    let pool = await poolPromise;
+    let userExist = await pool
+      .request()
+      .input("email", sql.NVarChar, email)
+      .execute("usp_checkRegisteredUser");
+
+    if (userExist.recordset[0] && userExist.recordset[0].UserExists == true) {
+      return res.status(409).send({
+        success: false,
+        message: "User already exists!",
+      });
+    }
+
+    let encryptPassword = await encryptData(password);
+
+    let addUser = await pool
+      .request()
+      .input("name", sql.NVarChar, name)
+      .input("email", sql.NVarChar, email)
+      .input("password", sql.NVarChar, encryptPassword)
+      .input("isActive", sql.Bit, true)
+      .input("role", sql.NVarChar, ROLE.USER)
+      .execute("usp_insertUpdateUser");
+
+    let User = addUser.recordset;
+
+    if (User && User[0] && User[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "user not created sucessfully",
+      });
+    }
+
+    return res.status(201).send({
+      success: true,
+      data: User,
+      message: "user created sucessfully",
+    });
+  } catch (error) {
+    console.log(error, "user.controller -> userRegister");
+    next(error);
+  }
+};
+
 module.exports = {
   userRegister,
   userLogin,
   userResetPassword,
   updateOrDelete,
   userGetAll,
+  updateImage
 };

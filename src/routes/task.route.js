@@ -19,8 +19,8 @@ const {
     getTaskByUserId,
     editTaskStateById,
     getCurrentTaskById,
-    addComment
-
+    addComment,
+    updateOrDeleteComment
 } = require("../controllers/task.controller");
 
 
@@ -53,6 +53,7 @@ router.get("/getTaskById/:taskId", verifyToken,  getCurrentTaskById);
 
 
 // below is add comment 
+
 router.post(
   "/addComment",
   verifyToken,
@@ -60,6 +61,12 @@ router.post(
   addComment
 );
 
+router.post(
+  "/updateOrDeleteComment",
+  verifyToken,
+//   validateBody(createTaskSchema),
+updateOrDeleteComment
+);
 
 
 module.exports = router;

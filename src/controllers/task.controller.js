@@ -17,6 +17,7 @@ const createTask = async (req, res, next) => {
       .input("deadline", sql.Date, deadLine)
       .input("projectId", sql.Int, projectId)
       .input("progress", sql.Int, 0)
+      .input("priority", sql.NVarChar, "Low")
       .input("status", sql.NVarChar, STATUS.PENDING)
       .input("memberId", sql.Int, memberId)
       .input("createdBy", sql.Int, userId)
@@ -43,9 +44,10 @@ const createTask = async (req, res, next) => {
   }
 };
 
+// update or delete task --- 
 const modifyTask = async (req, res, next) => {
   try {
-    let { newTitle,taskId,newDesc,newDeadLine,newProgress,isActive= true} = req.body;
+    let { newTitle,taskId,newDesc,newDeadLine,newProgress,newPriority,isActive= true} = req.body;
 
     let { userRole, userId } = req.user;
 
@@ -55,6 +57,7 @@ const modifyTask = async (req, res, next) => {
       .input("id", sql.Int, taskId)
       .input("title", sql.NVarChar, newTitle)
       .input("description", sql.NVarChar, newDesc)
+      .input("priority", sql.NVarChar, newPriority)
       .input("deadline", sql.Date, newDeadLine)
       .input("progress", sql.Int, Number(newProgress))
       .input("updatedBy", sql.Int, userId)
@@ -268,7 +271,7 @@ const getCurrentTaskById = async (req, res, next) => {
   }
 };
 
-
+// comemnt api 
 const addComment = async (req, res, next) => {
   try {
     let { text, authorId, taskId } = req.body;
@@ -309,6 +312,41 @@ const addComment = async (req, res, next) => {
   }
 };
 
+const updateOrDeleteComment = async (req, res, next) => {
+  try {
+    let { text:content, commentId, isActive } = req.body;
+    let { userRole, userId } = req.user;
+
+
+    let pool = await poolPromise;
+    let updateComment = await pool
+      .request()
+      .input("commentId", sql.Int, commentId)
+      .input("content", sql.NVarChar, content)
+      .input("isActive", sql.Bit, isActive)
+      .execute("usp_updateComments");
+
+    let commentData = updateComment.recordset[0];
+
+    if (commentData && commentData[0] && commentData[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "comment not Upadted sucessfully",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      data: commentData,
+      message: "comment updated sucessfully",
+    });
+
+  } catch (error) {
+    console.log(error, "task.controller -> updateOrDeleteComment");
+    next(error);
+  }
+};
+
 module.exports = {
   createTask,
   modifyTask,
@@ -316,5 +354,6 @@ module.exports = {
   getTaskByUserId,
   editTaskStateById,
   getCurrentTaskById,
-  addComment
+  addComment,
+  updateOrDeleteComment
 };
