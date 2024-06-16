@@ -68,13 +68,13 @@ const createProject = async (req, res, next) => {
 // update or delete only by admin or project created user
 const updateOrDeleteProject = async (req, res, next) => {
   try {
-    let { projectId, name, isActive } = req.body;
+    let { id, name, isActive } = req.body;
     let { userRole, userId } = req.user;
 
     let pool = await poolPromise;
     let projectExist = await pool
       .request()
-      .input("projectId", sql.Int, projectId)
+      .input("projectId", sql.Int, id)
       .execute("usp_checkAndGetProject");
 
     if (
@@ -94,7 +94,7 @@ const updateOrDeleteProject = async (req, res, next) => {
     if ((userRole && userRole == "Admin") || userId == projectCreatedUser) {
       let addproject = await pool
         .request()
-        .input("id", sql.Int, projectId)
+        .input("id", sql.Int, id)
         .input("updatedBy", sql.Int, userId)
         .input("name", sql.NVarChar, name)
         .input("isActive", sql.Bit, isActive)
@@ -109,7 +109,7 @@ const updateOrDeleteProject = async (req, res, next) => {
         });
       }
 
-      return res.status(201).send({
+      return res.status(200).send({
         success: true,
         data: projectData,
         message: "Project Updated sucessfully",
