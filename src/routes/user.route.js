@@ -23,12 +23,14 @@ const {
   createUserSchema,
   userLoginSchema,
   userLogoutSchema,
-  imageAddUpdateSchema
+  imageAddUpdateSchema,
+  updateDeleteUserSchema,
+  getImageSchema
 } = require("../validations/user.validation");
 
 const {
   validateBody,
-  validateParams,
+  validateQuery,
 } = require("../validations/joi.validator");
 
 const {
@@ -48,21 +50,23 @@ router.post(
   userRegister
 );
 
-router.post("/login", validateBody(createUserSchema), userLogin);
+router.post("/login", validateBody(userLoginSchema), userLogin);
 
 router.post("/addUpdateImage",
   // upload.single('image'),
+  validateBody(imageAddUpdateSchema),
    addUpdateImage
   );
 
 router.get("/getImage",
   // upload.single('image'),
+  validateQuery(getImageSchema),
   getUserImage
   );
 
 router.put("/updateOrDelete", 
   verifyToken,
-  // validateBody(createUserSchema), 
+  validateBody(updateDeleteUserSchema), 
   updateOrDelete);
 
 router.get("/getAll", 

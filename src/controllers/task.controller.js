@@ -5,8 +5,6 @@ const { STATUS, STATUS_MAPPING } = require("../constants/status.const");
 const createTask = async (req, res, next) => {
   try {
     let { title, deadLine, projectId, memberId, description = "" } = req.body;
-
-    console.log(req.body, "this is request --- -");
     let { userRole, userId } = req.user;
 
     let pool = await poolPromise;
@@ -17,7 +15,7 @@ const createTask = async (req, res, next) => {
       .input("deadline", sql.Date, deadLine)
       .input("projectId", sql.Int, projectId)
       .input("progress", sql.Int, 0)
-      .input("priority", sql.NVarChar, "Low")
+      .input("priority", sql.NVarChar, "low")
       .input("status", sql.NVarChar, STATUS.PENDING)
       .input("memberId", sql.Int, memberId)
       .input("createdBy", sql.Int, userId)
@@ -275,13 +273,8 @@ const getCurrentTaskById = async (req, res, next) => {
 const addComment = async (req, res, next) => {
   try {
     let { text, authorId, taskId } = req.body;
-
-    console.log(req.body, "this is request --- -");
     let { userRole, userId } = req.user;
 
-
-    console.log(authorId,"authorId")
-    console.log(userId,"userId")
     let pool = await poolPromise;
     let addComment = await pool
       .request()

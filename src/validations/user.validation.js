@@ -9,8 +9,7 @@ const createUserSchema = Joi.object().keys({
   isActive: Joi.boolean()
     // .when("id", { is: 0, then: Joi.boolean().required() })
     .optional(),
-  name: Joi.string()
-    .optional(),
+  name: Joi.string().optional(),
 });
 
 const userLoginSchema = Joi.object().keys({
@@ -22,15 +21,26 @@ const userLogoutSchema = Joi.object().keys({
   id: Joi.number().required(),
 });
 
-const imageAddUpdateSchema = Joi.object().keys({
-  image: Joi.string().optional(),
-  userId: Joi.string().required(),
+const updateDeleteUserSchema = Joi.object().keys({
+  role: Joi.string().optional(),
+  id: Joi.number().required(),
+  isActive: Joi.boolean().optional(),
 });
 
+const imageAddUpdateSchema = Joi.object().keys({
+  image: Joi.string().optional(),
+  userId:Joi.number().required(),
+});
+
+const getImageSchema = Joi.object().keys({
+  userId:Joi.number().required(),
+});
 
 module.exports = {
   createUserSchema,
   userLoginSchema,
   userLogoutSchema,
-  imageAddUpdateSchema
+  imageAddUpdateSchema,
+  updateDeleteUserSchema,
+  getImageSchema
 };

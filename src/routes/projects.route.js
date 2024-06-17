@@ -4,27 +4,27 @@ const router = express.Router();
 const { verifyToken } = require("../middlewares/auth");
 
 const {
-    createProjectSchema,
+  createProjectSchema,
+  updateDeleteProjectSchema,
+  addProjectMemberSchema,
+  updateDeleteProjectMemberSchema,
+  getMemberByProjectIdSchema
 } = require("../validations/projects.validator");
 
-const {
-  validateBody,
-  validateQuery,
-} = require("../validations/joi.validator");
+const { validateBody, validateQuery } = require("../validations/joi.validator");
 
 const {
-    createProject,
-    updateOrDeleteProject,
-    getProjectByUserId,
-    addProjectMember,
-    getMemberByProjectId,
-    updateOrDeleteMember
+  createProject,
+  updateOrDeleteProject,
+  getProjectByUserId,
+  addProjectMember,
+  getMemberByProjectId,
+  updateOrDeleteMember,
 } = require("../controllers/projects.controller");
 
 // This is child route of project like projects/tasks/...
-let task = require("./task.route")
-router.use("/tasks",task)
-
+let task = require("./task.route");
+router.use("/tasks", task);
 
 router.post(
   "/create",
@@ -36,19 +36,25 @@ router.post(
 router.post(
   "/updateOrDelete",
   verifyToken,
-  // validateBody(createProjectSchema),
+  validateBody(updateDeleteProjectSchema),
   updateOrDeleteProject
 );
 
-router.get("/getAllByUserId", verifyToken,  getProjectByUserId);
-
+router.get("/getAllByUserId", verifyToken, getProjectByUserId);
 
 // Project Member api
-router.post("/addMember", verifyToken,  addProjectMember);
+router.post(
+  "/addMember",
+  verifyToken,
+  validateBody(addProjectMemberSchema),
+  addProjectMember
+);
 
-router.post("/memberUpdateOrDelete", verifyToken,  updateOrDeleteMember);
+router.post("/memberUpdateOrDelete", verifyToken,validateBody(updateDeleteProjectMemberSchema), updateOrDeleteMember);
 
-
-router.get("/membersByProjectId", verifyToken,  getMemberByProjectId);
+router.get("/membersByProjectId",
+   verifyToken,
+   validateQuery(getMemberByProjectIdSchema),
+    getMemberByProjectId);
 
 module.exports = router;

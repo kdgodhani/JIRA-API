@@ -5,6 +5,10 @@ const { verifyToken } = require("../middlewares/auth");
 
 const {
     createTaskSchema,
+    modifyTaskSchema,
+    editTaskStateSchema,
+    addCommentSchema,
+    updateDeleteCommentSchema
 } = require("../validations/task.validator");
 
 const {
@@ -20,28 +24,28 @@ const {
     editTaskStateById,
     getCurrentTaskById,
     addComment,
-    updateOrDeleteComment
+    updateOrDeleteComment,
 } = require("../controllers/task.controller");
 
 
 router.post(
   "/create",
   verifyToken,
-//   validateBody(createTaskSchema),
+  validateBody(createTaskSchema),
   createTask
 );
 
 router.post(
   "/modify",
   verifyToken,
-//   validateBody(createTaskSchema),
+  validateBody(modifyTaskSchema),
   modifyTask
 );
 
 router.post(
   "/editState",
   verifyToken,
-//   validateBody(createTaskSchema),
+  validateBody(editTaskStateSchema),
 editTaskStateById
 );
 
@@ -57,14 +61,14 @@ router.get("/getTaskById/:taskId", verifyToken,  getCurrentTaskById);
 router.post(
   "/addComment",
   verifyToken,
-//   validateBody(createTaskSchema),
+  validateBody(addCommentSchema),
   addComment
 );
 
 router.post(
   "/updateOrDeleteComment",
   verifyToken,
-//   validateBody(createTaskSchema),
+  validateBody(updateDeleteCommentSchema),
 updateOrDeleteComment
 );
 
