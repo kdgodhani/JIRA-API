@@ -48,9 +48,9 @@ const userRegister = async (req, res, next) => {
       .input("role", sql.NVarChar, ROLE.USER)
       .execute("usp_insertUpdateUser");
 
-    let User = addUser.recordset;
+    let userData = addUser.recordset;
 
-    if (User && User[0] && User[0].ErrorNumber) {
+    if (userData && userData[0] && userData[0].ErrorNumber) {
       return res.status(500).send({
         success: false,
         message: "user not created sucessfully",
@@ -59,7 +59,7 @@ const userRegister = async (req, res, next) => {
 
     return res.status(201).send({
       success: true,
-      data: User,
+      data: userData,
       message: "user created sucessfully",
     });
   } catch (error) {
@@ -265,50 +265,72 @@ const userResetPassword = async (req, res, next) => {
   }
 };
 
-const updateImage = async (req, res, next) => {
+const addUpdateImage = async (req, res, next) => {
   try {
-    let { name, email, password } = req.body;
+    // let { id } = req.body;
+    let { image,userId } = req.body;
 
     let pool = await poolPromise;
-    let userExist = await pool
+    let addImage = await pool
       .request()
-      .input("email", sql.NVarChar, email)
-      .execute("usp_checkRegisteredUser");
-
-    if (userExist.recordset[0] && userExist.recordset[0].UserExists == true) {
-      return res.status(409).send({
-        success: false,
-        message: "User already exists!",
-      });
-    }
-
-    let encryptPassword = await encryptData(password);
-
-    let addUser = await pool
-      .request()
-      .input("name", sql.NVarChar, name)
-      .input("email", sql.NVarChar, email)
-      .input("password", sql.NVarChar, encryptPassword)
+      .input("image", sql.NVarChar, image)
+      .input("userId", sql.Int, userId)
       .input("isActive", sql.Bit, true)
-      .input("role", sql.NVarChar, ROLE.USER)
-      .execute("usp_insertUpdateUser");
+      .execute("usp_insertUpdateImage");
 
-    let User = addUser.recordset;
+    let imageData = addImage.recordset;
 
-    if (User && User[0] && User[0].ErrorNumber) {
+    if (imageData && imageData[0] && imageData[0].ErrorNumber) {
       return res.status(500).send({
         success: false,
-        message: "user not created sucessfully",
+        message: "image added or not updated",
       });
     }
 
-    return res.status(201).send({
+    return res.status(200).send({
       success: true,
-      data: User,
-      message: "user created sucessfully",
+      data: imageData,
+      message: "image added or updated sucessfully",
     });
   } catch (error) {
-    console.log(error, "user.controller -> userRegister");
+    console.log(error, "user.controller -> addUpdateImage");
+    next(error);
+  }
+};
+
+const getUserImage = async (req, res, next) => {
+  try {
+    let { userId } = req.query;
+
+    let pool = await poolPromise;
+    let getImage = await pool
+      .request()
+      .input("userId", sql.Int, userId)
+      .execute("usp_getUserImage");
+
+    let imageData = getImage.recordset;
+
+    if (imageData && imageData[0] && imageData[0].ErrorNumber) {
+      return res.status(500).send({
+        success: false,
+        message: "image not getting !!",
+      });
+    }
+
+    if (imageData &&imageData.length == 0) {
+      return res.status(400).send({
+        success: false,
+        message: "image not Found !  Add image !!",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      data: imageData,
+      message: "image recieved sucessfully",
+    });
+  } catch (error) {
+    console.log(error, "user.controller -> getUserImage");
     next(error);
   }
 };
@@ -319,5 +341,6 @@ module.exports = {
   userResetPassword,
   updateOrDelete,
   userGetAll,
-  updateImage
+  addUpdateImage,
+  getUserImage
 };

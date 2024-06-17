@@ -22,8 +22,15 @@ const userLogoutSchema = Joi.object().keys({
   id: Joi.number().required(),
 });
 
+const imageAddUpdateSchema = Joi.object().keys({
+  image: Joi.string().optional(),
+  userId: Joi.string().required(),
+});
+
+
 module.exports = {
   createUserSchema,
   userLoginSchema,
   userLogoutSchema,
+  imageAddUpdateSchema
 };
